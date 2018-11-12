@@ -1,0 +1,58 @@
+extends layout
+
+block content
+
+  include side_nav
+
+  main
+    .row
+      .col.m12
+    
+    .fixed-action-btn
+      a.btn-floating.btn-large.red.modal-trigger(href='#newModal')
+        i.large.material-icons add
+      
+      //ul
+        li
+          a.btn-floating.red
+            i.material-icons insert_chart
+
+    // Modal Structure
+    #newModal.modal.modal-fixed-footer
+      .modal-content
+        h4 Nueva Ontología
+        .row(style='margin-top:4%')
+          .input-field.col.s12.m12
+            input.validate#ontology_name(type='text')
+            label(for='ontology_name') Nombre de la Ontología
+      .modal-footer
+        a.modal-close.waves-effect.waves-green.btn-flat#create_btn(href='#!') Crear Ontología
+
+
+  script.
+    $(document).ready(function(){
+      $('.modal').modal();
+      $('.fixed-action-btn').floatingActionButton();
+
+      $('#create_btn').click(function(){
+        if ($('#ontology_name').val() !== ''){
+          var query = { name: $('#ontology_name').val() };
+          $.post("/ontology/create", query )
+            .done(function(msg){ 
+                //console.log(msg);
+                window.location = '/ontology/edit/'+msg._id;
+            })
+            .fail(function(xhr, status, error) {
+                console.log(xhr);
+                console.log(status);
+                console.log(error);
+                M.toast({html: 'Datos Incorrectos'})
+            });
+        }
+        else{
+          M.toast({html: 'Completa los Campos'});
+        }
+      })
+
+    });
+

@@ -1,0 +1,176 @@
+extends layout
+
+block content
+
+    style.
+        body{
+            background-color: #017090 /* deep orange lighten 2*/
+        }
+        .div_form{
+            background-color: white;   
+        }
+
+        @media only screen and (min-width : 601px) and (max-width : 1260px) {
+        .toast {
+        width: 100%;
+        border-radius: 0;
+        background: #607d8b !important} }
+
+        @media only screen and (min-width : 1261px) {
+        .toast {
+        width: 100%;
+        border-radius: 0;
+        background: #607d8b !important} }
+
+        @media only screen and (min-width : 601px) and (max-width : 1260px) {
+        #toast-container {
+        min-width: 100%;
+        bottom: 90%;
+        top: 0%;
+        right: 0%;
+        left: 0%;} }
+
+        @media only screen and (min-width : 1261px) {
+        #toast-container {
+        min-width: 100%;
+        bottom: 90%;
+        top: 0%;
+        right: 0%;
+        left: 0%; } }
+        
+
+
+    .container
+        .row.animated.slideInDown#login_div(style='margin-top:5%')
+            .col.m4.offset-m4.s10.offset-s1.z-depth-2.div_form
+                .row(style='margin-top:8%')
+                    .col.s10.offset-s1(align='center')
+                        img.responsive-img(src='/images/owl.png')
+                form
+                    .row(style='margin-top:-4%')
+                        .input-field.col.s10.offset-s1()
+                          i.material-icons.prefix account_circle
+                          input.validate#email(type='text')
+                          label.regular(for='email') Correo Electrónico
+                    .row(style='margin-top:-6%')
+                        .input-field.col.s10.offset-s1
+                          i.material-icons.prefix lock_outline
+                          input#pass.validate(type='password')
+                          label.regular(for='pass') Contraseña
+                    
+                    .row(style='margin-top:-4%')
+                        .col.s10.offset-s1
+                            a.btn.waves-effect.waves-light.col.s12.teal.lighten-2#login_btn(href='#')
+                              | Acceder
+                    
+                .row(style='font-size:80%;margin-top:-4%',align='center')
+                    .col.s12
+                        //p
+                            strong
+                                a(href='/authenticate/forgott/passwd').red-text.text-darken-4
+                                    | ¿Olvidaste tu contraseña?
+
+                        p
+                            strong
+                                a(href='#').teal-text#change_to_2
+                                    | ¿No estas registrado?
+
+
+        .row.animated.slideInDown#signin_div(style='margin-top:14%;display: none;')
+            .col.m8.offset-m2.s10.offset-s1.z-depth-2.div_form
+                
+                form
+                    .row(style='margin-top:8%')
+                        .input-field.col.s5.offset-s1()
+                          input.validate#name(type='text')
+                          label(for='name') Nombre
+                        .input-field.col.s5
+                          input.validate#last_name(type='text')
+                          label(for='last_name') Apellidos
+                    .row(style='margin-top:-8%')
+                        .input-field.col.s10.offset-s1()
+                          input#email2(type='text')
+                          label(for='email2') Correo Electrónico
+                    .row(style='margin-top:-8%')
+                        .input-field.col.s5.offset-s1
+                          input#pass2(type='password')
+                          label(for='pass2') Contraseña
+                        .input-field.col.s5
+                          input#confirm(type='password')
+                          label(for='confirm') Confirmar 
+                    
+                    .row(style='margin-top:4%')
+                        .col.s10.offset-s1
+                            a.btn.waves-effect.waves-light.col.s12.teal.lighten-2#signin_btn
+                              | Registrar
+                    
+                .row(style='font-size:80%;margin-top:4%',align='center')
+                    .col.s12
+                        //p
+                            strong
+                                a(href='/authenticate/forgott/passwd').red-text.text-darken-4
+                                    | ¿Olvidaste tu contraseña?
+
+                        p
+                            strong
+                                a(href='#').teal-text#change_to_1
+                                    
+                                    | ¿Ya Tienes una Cuenta?
+
+    script.
+        $(document).ready(function(){
+            $('#change_to_1').click(function(){
+                document.getElementById('signin_div').style.display = "none"; 
+                document.getElementById('login_div').style.display = "block"; 
+            })
+            $('#change_to_2').click(function(){
+                document.getElementById('signin_div').style.display = "block"; 
+                document.getElementById('login_div').style.display = "none"; 
+            })
+            $('#signin_btn').click(function(){
+                var query = { name: $('#name').val(), last_name: $('#last_name').val(), email: $('#email2').val(), password: $('#pass2').val() };
+                if ($('#pass2').val() === $('#confirm').val()){
+                    $.post("/users/signin", query )
+                        .done(function(msg){ 
+                            M.toast({html: 'Usuario Guardado'})
+                            setTimeout(function() {
+                              window.location = '/';
+                            }, 3000);
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.log(xhr);
+                            console.log(status);
+                            console.log(error);
+                            M.toast({html: 'Error al Guardar'})
+                        });
+                        
+                }
+                else{
+                    M.toast({html: 'Las Contraseñas no Coinciden'})
+                }
+                
+            })
+
+            $('#login_btn').click(function(){
+                if ($('#email').val() != '' && $('#pass').val() != '' ){
+                    
+                    var query = { email: $('#email').val(), pass: $('#pass').val()};
+                    $.post("/users/login", query )
+                        .done(function(msg){ 
+                            window.location = '/';
+                        })
+                        .fail(function(xhr, status, error) {
+                            console.log(xhr);
+                            console.log(status);
+                            console.log(error);
+                            M.toast({html: 'Datos Incorrectos'})
+                        });
+                        
+                }
+                else{
+                    M.toast({html: 'Completa los Campos'})
+                }
+                
+            })
+            
+        });

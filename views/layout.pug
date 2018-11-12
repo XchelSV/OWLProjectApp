@@ -1,0 +1,52 @@
+doctype html
+html(ng-app='Onto')
+  head
+    title= 'OWL App'
+    meta(charset="UTF-8")
+    link(href='https://fonts.googleapis.com/icon?family=Material+Icons', rel='stylesheet')
+    link(rel='stylesheet', href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css", media="screen,projection")
+    link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css")
+
+    meta(name='viewport', content='width=device-width, initial-scale=1.0')
+
+    script(type='text/javascript', src='https://code.jquery.com/jquery-3.2.1.min.js')
+    script(src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js")
+    script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.5/angular.min.js')
+    script(type='text/javascript', src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.5/angular.min.js.map')
+    script(type='text/javascript', src='/javascripts/angular_module.js')
+    script(src='//momentjs.com/downloads/moment-with-locales.min.js')
+    
+
+    style.
+        header,nav,footer {
+          padding-left: 300px;
+        }
+
+        @media only screen and (max-width : 992px) {
+            header,nav, footer {
+                padding-left: 0;
+            }
+            nav{
+                max-width: 100%;
+            }
+        }
+
+        main {
+          padding-left: 330px;
+        }
+
+        @media only screen and (max-width : 992px) {
+            main {
+                padding-left: 5px;
+            }
+        }
+
+
+  body
+    block content
+  
+  script.
+    $(document).ready(function(){
+        $('.sidenav').sidenav();
+    });
+

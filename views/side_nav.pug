@@ -1,0 +1,25 @@
+nav.orange
+  // navbar content here
+  .nav-wrapper
+    ul.left.hide-on-med-and-down
+        li
+            a(href='/users/logout')
+                i.material-icons exit_to_app
+ul#slide-out.sidenav.sidenav-fixed
+  li
+    .user-view
+      .background.teal
+        
+      a(href='#')
+        img(src='/images/owl.png').responsive-img
+      a(href='#')
+        span.white-text.name= name+' '+last_name
+      a(href='#')
+        span.white-text.email= email
+  li
+    a(href='#!')
+      i.material-icons list
+      | Mis Ontologías
+  
+a.sidenav-trigger(href='#', data-target='slide-out')
+  i.material-icons menu

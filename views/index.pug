@@ -5,8 +5,20 @@ block content
   include side_nav
 
   main
-    .row
-      .col.m12
+    .row.animated.fadeIn
+      each ont in ontos
+        .col.s12.m4
+          .card.blue-grey.lighten-2
+            .card-content.white-text
+              span.card-title= ont.name
+              - var ont_date = new Date(ont.date);
+              - var moment_date = moment([ont_date.getFullYear(),ont_date.getMonth(),ont_date.getDate(),ont_date.getHours(),ont_date.getMinutes()]);
+              - moment_date.locale('es');
+              p
+                i='Editado '+ moment_date.fromNow()
+            .card-action
+              a(href='/ontology/edit/'+ont._id) Editar
+
     
     .fixed-action-btn
       a.btn-floating.btn-large.red.modal-trigger(href='#newModal')
@@ -33,6 +45,7 @@ block content
     $(document).ready(function(){
       $('.modal').modal();
       $('.fixed-action-btn').floatingActionButton();
+
 
       $('#create_btn').click(function(){
         if ($('#ontology_name').val() !== ''){

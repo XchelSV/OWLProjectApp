@@ -45,13 +45,20 @@ router.post('/create', (req, res, next) => {
 
 router.get('/edit/:_id', (req, res, next) => {
 	if (req.session.active){
-		Ontology.findById( req.params._id).populate('classes').exec(function(err, ontology){
-			res.render('edit_ontology', { 
-				name: req.session.user.name,
-				last_name: req.session.user.last_name,
-				email: req.session.user.email,
-				ontology: ontology
-			});		
+		Ontology.findById( req.params._id).populate({
+				path:'classes',
+				model:'Onto_Class',
+				populate:{
+					path:'entities',
+					model:'Entity'
+				}
+			}).exec(function(err, ontology){
+				res.render('edit_ontology', { 
+					name: req.session.user.name,
+					last_name: req.session.user.last_name,
+					email: req.session.user.email,
+					ontology: ontology
+				});		
 		})
 	}
 	else{
@@ -110,6 +117,70 @@ router.post('/class/create/:_onto_id', (req, res, next) => {
 	}
 	else{
 		res.redirect('/users/login');
+	}
+});
+
+router.post('/instance/create/:_class_id', (req, res, next) => {
+	if (req.session.active){
+
+			const createEntity = new Promise((resolve,reject)=>{
+				var new_entity = new Entity_Class({
+					name: req.body.name,
+				    date: new Date(),
+				    class: req.params._class_id,
+				})
+
+				Onto_Class.findById(req.params._class_id, function(err,classes){
+					Ontology.findById(classes.ontology, function(err,onto){
+						new_entity.save((err,saved)=>{
+							classes.entities.push(saved._id);
+							classes.date = new Date();
+							onto.date = new Date();
+							classes.save(function(err2,saved_2){
+								onto.save(function(err3,saved_3){
+									if(err){
+										console.log(err);
+										reject(err);
+									}
+									if(err2){
+										console.log(err2);
+										reject(err);
+									}
+									if(err3){
+										console.log(err3);
+										reject(err);
+									}
+									resolve(saved);
+								})
+							})
+						})
+					})
+				})
+			})
+			const createAPIEntity = new Promise((resolve,reject)=>{				
+				Onto_Class.findById(req.params._class_id, function(err,classes){
+					OwlAPI.post("http://localhost:8080/API-0.0.1-SNAPSHOT/pdf/onthology/create/instance/"+classes.ontology+"/"+classes.name+"/"+req.body.name, {} , function (data, response) {
+						if (data){
+							resolve(data);
+						}
+					})
+				})
+			})
+			createAPIEntity.then((saved)=>{
+				createEntity.then((ent_saved)=>{
+					res.status(200).send({_id:ent_saved._id});
+				}).catch((err)=>{
+					console.log(err);
+					res.status(500).send({err:err});
+				})	
+			}).catch((err)=>{
+				console.log(err);
+				res.status(500).send({err:err});
+			})
+		
+	}
+	else{
+		res.sendStatus(401);
 	}
 });
 

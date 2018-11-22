@@ -15,11 +15,13 @@ angular.module('Onto', [])
 	
 	$scope.classes = [];
 	var count = 0;
+	for (var i = 0; i < current_ontology.classes.length; i++) {
+		count++;
+		$scope.classes.push({index: count , _id: current_ontology.classes[i]._id ,name: current_ontology.classes[i].name, attributes: [], instances: current_ontology.classes[i].entities })
+	}
+
 	$scope.add_class = function(){
 		count++;
-		$scope.classes.push({index: count , name: 'Clase'+count, attributes: [], instances:[] })
-		M.updateTextFields();
-
 		$http({
 			method: 'POST',
 			url: '/ontology/class/create/'+current_ontology._id,
@@ -27,7 +29,9 @@ angular.module('Onto', [])
 				classes: {index: count , name: 'Clase'+count, attributes: [], instances:[] }
 			}
 			}).then(function successCallback(response) {
-				//M.toast({html: 'Cambios Guardados'})
+				console.log(response);
+				$scope.classes.push({index: count , _id: response._id ,name: 'Clase'+count, attributes: [], instances:[] })
+				M.updateTextFields();
 
 			}, function errorCallback(response) {
 				M.toast({html: 'Error al Guardar'})
@@ -57,7 +61,21 @@ angular.module('Onto', [])
 	$scope.push_inst = function(index){
 		for (var i = 0; i < $scope.classes.length; i++) {
 			if (parseInt(index) == $scope.classes[i].index){
-				$scope.classes[i].instances.push({ name: 'NuevaInstancia' });
+				var random_str = makeid();
+				$http({
+					method: 'POST',
+					url: '/ontology/instance/create/'+$scope.classes[i]._id,
+					data: {
+						name: 'NuevaInstancia-'+random_str
+					}
+					}).then(function successCallback(response) {
+						//console.log(response);
+						$scope.classes[i].instances.push({ name: 'NuevaInstancia-'+random_str, _id: response._id });
+						M.updateTextFields();
+
+					}, function errorCallback(response) {
+						M.toast({html: 'Error al Guardar'})
+					})
 				break;
 			}
 		}
@@ -74,5 +92,14 @@ angular.module('Onto', [])
 	}	
 	$scope.save_class = function(index){
 
+	}
+	function makeid() {
+	  var text = "";
+	  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+	  for (var i = 0; i < 4; i++)
+	    text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+	  return text;
 	}
 });

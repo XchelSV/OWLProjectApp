@@ -90,8 +90,25 @@ angular.module('Onto', [])
 			}
 		}
 	}	
-	$scope.save_class = function(index){
+	$scope.edit_class = function(index){
+		console.log('blured_class '+index);
+		for (var i = 0; i < $scope.classes.length; i++) {
+			if (parseInt(index) == $scope.classes[i].index){
+				$http({
+					method: 'PUT',
+					url: '/ontology/class/'+$scope.classes[i]._id,
+					data: {
+						name: $scope.classes[i].name
+					}
+					}).then(function successCallback(response) {
+						//console.log(response);
 
+					}, function errorCallback(response) {
+						M.toast({html: 'Error al Guardar'})
+					})
+				break;
+			}
+		}
 	}
 	function makeid() {
 	  var text = "";

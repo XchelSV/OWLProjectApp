@@ -184,6 +184,61 @@ router.post('/instance/create/:_class_id', (req, res, next) => {
 	}
 });
 
+
+router.put('/class/:_class_id', (req, res, next) => {
+	if (req.session.active){
+
+			const editEntity = new Promise((resolve,reject)=>{
+				Onto_Class.findById(req.params._class_id, function(err,classes){
+					Ontology.findById(classes.ontology, function(err,onto){
+						var fs = require('fs')
+						fs.readFile('./public/ontologies/'+classes.ontology+'.owl', 'utf8', function (err,data) {
+						  if (err) {
+						    return console.log(err);
+						  }
+						  
+						  var re = new RegExp(classes.name,"g");
+						  console.log(re + ' '+req.body.name);
+						  var result = data.replace(re , req.body.name);
+
+						  fs.writeFile('./public/ontologies/'+classes.ontology+'.owl', result, 'utf8', function (err) {
+						    	if (err) return console.log(err);
+						    	
+								classes.name = req.body.name;
+								classes.date = new Date();
+								onto.date = new Date();
+								classes.save(function(err2,saved_2){
+									onto.save(function(err3,saved_3){								
+										if(err2){
+											console.log(err2);
+											reject(err);
+										}
+										if(err3){
+											console.log(err3);
+											reject(err);
+										}
+										resolve(saved_2);
+									})
+								})
+							})
+						})
+					})
+				})
+			})
+			
+			editEntity.then((saved)=>{				
+				res.status(200).send({_id:saved._id});									
+			}).catch((err)=>{
+				console.log(err);
+				res.status(500).send({err:err});
+			})
+		
+	}
+	else{
+		res.sendStatus(401);
+	}
+});
+
 router.get('/download/:_id',function (req,res,next){
 	if(req.session.active === true){
 		res.sendFile(path.join(__dirname, '../public/ontologies/'+req.params._id+'.owl'));

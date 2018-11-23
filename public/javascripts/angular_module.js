@@ -91,7 +91,7 @@ angular.module('Onto', [])
 		}
 	}	
 	$scope.edit_class = function(index){
-		console.log('blured_class '+index);
+		//console.log('blured_class '+index);
 		for (var i = 0; i < $scope.classes.length; i++) {
 			if (parseInt(index) == $scope.classes[i].index){
 				$http({
@@ -107,6 +107,30 @@ angular.module('Onto', [])
 						M.toast({html: 'Error al Guardar'})
 					})
 				break;
+			}
+		}
+	}
+	$scope.edit_inst = function(index, index_inst){
+		//console.log('blured_class '+index);
+		for (var i = 0; i < $scope.classes.length; i++) {
+			if (parseInt(index) == $scope.classes[i].index){
+				for (var j = 0; j < $scope.classes[i].instances.length; j++) {
+					if (index_inst == $scope.classes[i].instances[j]._id){
+						$http({
+							method: 'PUT',
+							url: '/ontology/instance/'+$scope.classes[i].instances[j]._id,
+							data: {
+								name: $scope.classes[i].instances[j].name
+							}
+							}).then(function successCallback(response) {
+								//console.log(response);
+
+							}, function errorCallback(response) {
+								M.toast({html: 'Error al Guardar'})
+							})
+						break;
+					}
+				}
 			}
 		}
 	}

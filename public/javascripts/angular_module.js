@@ -14,10 +14,15 @@ angular.module('Onto', [])
 .controller('editController', function($scope, $http) {
 	
 	$scope.classes = [];
+	$scope.global_instances = [];
 	var count = 0;
 	for (var i = 0; i < current_ontology.classes.length; i++) {
 		count++;
 		$scope.classes.push({index: count , _id: current_ontology.classes[i]._id ,name: current_ontology.classes[i].name, attributes: [], instances: current_ontology.classes[i].entities })
+		
+		for (var j = 0; j < current_ontology.classes[i].entities.length; j++) {
+			$scope.global_instances.push(current_ontology.classes[i].entities[j]);
+		}
 	}
 
 	$scope.add_class = function(){
@@ -29,8 +34,7 @@ angular.module('Onto', [])
 				classes: {index: count , name: 'Clase'+count, attributes: [], instances:[] }
 			}
 			}).then(function successCallback(response) {
-				console.log(response);
-				$scope.classes.push({index: count , _id: response._id ,name: 'Clase'+count, attributes: [], instances:[] })
+				$scope.classes.push({index: count , _id: response.data._id ,name: 'Clase'+count, attributes: [], instances:[] })
 				M.updateTextFields();
 
 			}, function errorCallback(response) {
@@ -39,25 +43,6 @@ angular.module('Onto', [])
 		
 	}
 
-	$scope.push_att = function(index){
-		for (var i = 0; i < $scope.classes.length; i++) {
-			if (parseInt(index) == $scope.classes[i].index){
-				$scope.classes[i].attributes.push({ name: 'NuevoAtributo', type: 'N/A' });
-				break;
-			}
-		}
-		$('select').formSelect();
-	}
-	$scope.pop_att = function(index){
-		for (var i = 0; i < $scope.classes.length; i++) {
-			if (parseInt(index) == $scope.classes[i].index){
-				if ($scope.classes[i].attributes.length > 0 ){
-					$scope.classes[i].attributes.pop();
-					break;
-				}
-			}
-		}	
-	}
 	$scope.push_inst = function(index){
 		for (var i = 0; i < $scope.classes.length; i++) {
 			if (parseInt(index) == $scope.classes[i].index){
@@ -70,7 +55,8 @@ angular.module('Onto', [])
 					}
 					}).then(function successCallback(response) {
 						//console.log(response);
-						$scope.classes[i].instances.push({ name: 'NuevaInstancia-'+random_str, _id: response._id });
+						$scope.classes[i].instances.push({ name: 'NuevaInstancia-'+random_str, _id: response.data._id });
+						$scope.global_instances.push({ name: 'NuevaInstancia-'+random_str, _id: response.data._id });
 						M.updateTextFields();
 
 					}, function errorCallback(response) {
@@ -84,7 +70,16 @@ angular.module('Onto', [])
 		for (var i = 0; i < $scope.classes.length; i++) {
 			if (parseInt(index) == $scope.classes[i].index){
 				if ($scope.classes[i].instances.length > 0 ){
+					var inst_id = $scope.classes[i].instances._id;
 					$scope.classes[i].instances.pop();
+
+					for (var j = 0; j < $scope.global_instances.length; j++) {
+						if ($scope.global_instances[j]._id == inst_id){
+							delete $scope.global_instances[j];
+							break;
+						}
+					}
+
 					break;
 				}
 			}
@@ -128,12 +123,43 @@ angular.module('Onto', [])
 							}, function errorCallback(response) {
 								M.toast({html: 'Error al Guardar'})
 							})
+
+						var inst_id = $scope.classes[i].instances[j]._id;
+						for (var k = 0; k < $scope.global_instances.length; k++) {
+							if ($scope.global_instances[k]._id == inst_id){
+								$scope.global_instances[k].name = $scope.classes[i].instances[j].name ;
+								break;
+							}
+						}
+
 						break;
 					}
 				}
 			}
 		}
 	}
+
+	$scope.relations = relations;
+	$scope.subject = 'na';
+	$scope.complement = 'na';
+	$scope.add_relation = function(){
+		$http({
+			method: 'POST',
+			url: '/ontology/relation',
+			data: {
+				subject: $scope.subject,
+				verb: $scope.verb,
+				complement: $scope.complement,
+				ontology: current_ontology._id
+			}
+			}).then(function successCallback(response) {
+				console.log(response);
+				$scope.relations.unshift(response.data);
+			}, function errorCallback(response) {
+				M.toast({html: 'Error al Guardar'})
+			})
+	}
+
 	function makeid() {
 	  var text = "";
 	  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

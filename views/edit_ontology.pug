@@ -3,7 +3,11 @@ extends layout
 block content
 
   include side_nav
-
+  style.
+    hr {
+      border: 1px solid #cfd8dc;
+      border-radius: 5px;
+    }
   main(ng-controller='editController')
     .row
       .col.m9.s8
@@ -11,6 +15,13 @@ block content
       .col.m3.s4.align-right(style='margin-top:-1%')
         a.waves-effect.waves-light.btn(href='/ontology/download/'+ontology._id) Descargar OWL
           i.material-icons.right cloud_download
+
+    .row
+      .col.m11.s11
+        hr
+    .row
+      .col.m12.s12
+        b Clases
     .row
       .col.m4.s12(ng-repeat='c in classes').animated.fadeIn
         .card.blue-grey.lighten-4(id='{{c.name}}')
@@ -21,27 +32,6 @@ block content
                 label Nombre de Clase
 
             .row(style='margin-top:-6%')
-              .col.m8.s8
-                b Atributos
-              .col.m2.s2(style='margin-top:-4%')
-                  a.btn-floating.btn.waves-effect.waves-light.lighten-3(ng-click='push_att(c.index)')
-                      i.material-icons add
-              .col.m2.s2(style='margin-top:-4%')
-                  a.btn-floating.btn.waves-effect.waves-light.red.lighten-3(ng-click='pop_att(c.index)')
-                    i.material-icons remove
-            .row(ng-repeat='att in c.attributes')
-              .col.m6.input-field
-                input#class_name.grey-text(value='{{att.name}}', type='text', ng-model='att.name')
-                label Nombre
-              .col.m6.input-field
-                select(ng-model='att.type')
-                  option(value='NA') N/A
-                  option(value='Int') Entero
-                  option(value='Str') String
-                label Tipo
-
-
-            .row
               .col.m8.s8
                 b Instancias
               .col.m2.s2(style='margin-top:-2%')
@@ -55,6 +45,32 @@ block content
                 input#class_name.grey-text(value='{{inst.name}}', type='text', ng-model='inst.name', ng-blur='edit_inst(c.index , inst._id)')
                 label Nombre
 
+    .row
+      .col.m11.s11
+        hr
+    .row
+      .col.m12.s12
+        b Relaciones
+    .row
+      .col.m4.s12(ng-repeat='r in relations').animated.fadeIn
+        .card.blue-grey.lighten-4
+          .card-content.grey-text
+            .row
+              .col.m8.s8
+                b Relaciones
+            .row
+              .col.m12.input-field
+                input.grey-text(type='text', value='{{r.subject.name}}', disabled)
+                label Sujeto
+              
+              .col.m12.input-field
+                input.grey-text(type='text', value='{{r.verb}}', disabled)
+                label Verbo/Prop/Relación
+
+              .col.m12.input-field
+                input.grey-text(type='text', value='{{r.complement.name}}', disabled)
+                label Predicado
+
 
       
     
@@ -64,12 +80,16 @@ block content
       
       ul
         li
+          a.btn-floating.black.modal-trigger(class="tooltipped" data-position="top" data-tooltip="Relación", href='#newRelation')
+            i.material-icons domain
+        li
           a.btn-floating.teal(class="tooltipped" data-position="top" data-tooltip="Clase", ng-click='add_class()')
             i.material-icons person_add
 
         li
           a.btn-floating.orange.modal-trigger(class="tooltipped" data-position="top" data-tooltip="Ontología", href='#newModal')
             i.material-icons domain
+
 
     // Modal Structure
     #newModal.modal.modal-fixed-footer
@@ -82,10 +102,32 @@ block content
       .modal-footer
         a.modal-close.waves-effect.waves-green.btn-flat#create_btn(href='#!') Crear Ontología
 
+    // Modal Structure
+    #newRelation.modal.modal-fixed-footer
+      .modal-content
+        h4 Nueva Relación
+        .row
+            .col.m4.input-field
+              select.grey-text.browser-default(ng-model='subject')
+                option( value='na', selected) Selecciona Sujeto
+                option( ng-repeat='inst in global_instances', value='{{inst._id}}') {{inst.name}}
+            
+            .col.m4.input-field
+              input.grey-text#verb(type='text', ng-model='verb')
+              label(for='verb') Verbo/Prop/Relación
+
+            .col.m4.input-field
+              select.grey-text.browser-default( ng-model='complement')
+                option( value='na', selected, disabled) Selecciona Predicado
+                option( ng-repeat='inst in global_instances', value='{{inst._id}}') {{inst.name}}
+      .modal-footer
+        a.modal-close.waves-effect.waves-green.btn-flat#create_btn(ng-click='add_relation()') Crear Relación
+
 
   script.
     
     var current_ontology = !{JSON.stringify(ontology)};
+    var relations = !{JSON.stringify(relations)};
 
     document.addEventListener('DOMContentLoaded', function() {
       var elems = document.querySelectorAll('.fixed-action-btn');

@@ -2,6 +2,7 @@ import express from 'express';
 import Ontology from '../models/ontology_model';
 import Onto_Class from '../models/onto_class_model';
 import Entity_Class from '../models/entity_model';
+import Relation from '../models/relation_model';
 import nodeRestClient from 'node-rest-client';
 import path from 'path';
 const Client = nodeRestClient.Client;
@@ -45,20 +46,23 @@ router.post('/create', (req, res, next) => {
 
 router.get('/edit/:_id', (req, res, next) => {
 	if (req.session.active){
-		Ontology.findById( req.params._id).populate({
-				path:'classes',
-				model:'Onto_Class',
-				populate:{
-					path:'entities',
-					model:'Entity'
-				}
-			}).exec(function(err, ontology){
-				res.render('edit_ontology', { 
-					name: req.session.user.name,
-					last_name: req.session.user.last_name,
-					email: req.session.user.email,
-					ontology: ontology
-				});		
+		Relation.find({ontology: req.params._id}).populate('subject').populate('complement').sort('-date').exec(function(err,relations){
+			Ontology.findById( req.params._id).populate({
+					path:'classes',
+					model:'Onto_Class',
+					populate:{
+						path:'entities',
+						model:'Entity'
+					}
+				}).exec(function(err, ontology){
+					res.render('edit_ontology', { 
+						name: req.session.user.name,
+						last_name: req.session.user.last_name,
+						email: req.session.user.email,
+						ontology: ontology,
+						relations: relations
+					});		
+			})
 		})
 	}
 	else{
@@ -300,5 +304,57 @@ router.get('/download/:_id',function (req,res,next){
 		res.redirect('/authenticate/login');
 	}	
 })
+
+
+router.post('/relation', (req, res, next) => {
+	if (req.session.active){
+
+			const createRelation = new Promise((resolve,reject)=>{
+				var newRelation = new Relation({
+					subject: req.body.subject,
+					verb: req.body.verb,
+					complement: req.body.complement,
+					ontology: req.body.ontology,
+					date: new Date()
+				})	
+				newRelation.save(function(err, saved){
+					if (err){
+						reject(err);
+					}
+					Relation.findById(saved._id).populate('subject').populate('complement').exec(function(err, rel){
+						resolve(rel);
+					})
+				})
+			})
+
+			const createAPIRelation = new Promise((resolve,reject)=>{	
+				Entity_Class.findById(req.body.subject, function(err, entity_a){ 
+					Entity_Class.findById(req.body.complement, function(err, entity_b){ 
+						OwlAPI.post("http://localhost:8080/API-0.0.1-SNAPSHOT/pdf/onthology/create/property/"+req.body.ontology+'/'+entity_a.name+'/'+entity_b.name+'/'+req.body.verb , {} , function (data, response) {
+							if (data){
+								resolve(data);
+							}
+						})
+					})
+				})
+			})
+
+			createAPIRelation.then((saved)=>{
+				createRelation.then((class_saved)=>{
+					res.status(200).send(class_saved);
+				}).catch((err)=>{
+					console.log(err);
+					res.status(500).send({err:err});
+				})	
+			}).catch((err)=>{
+				console.log(err);
+				res.status(500).send({err:err});
+			})
+		
+	}
+	else{
+		res.redirect('/users/login');
+	}
+});
 
 module.exports = router;

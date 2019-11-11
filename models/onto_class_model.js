@@ -5,7 +5,8 @@ const Schema = mongoose.Schema;
 	    name: { type: String, required: true },
 	    date: { type: Date, required: true },
 	    ontology: {type: Schema.Types.ObjectId, ref: 'Ontology'},
-	    entities: [{type: Schema.Types.ObjectId, ref: 'Entity'}]
+	    entities: [{type: Schema.Types.ObjectId, ref: 'Entity'}],
+	    properties: [{type: Schema.Types.ObjectId, ref: 'Class_Property'}]
 	},{ usePushEach: true });
 
 

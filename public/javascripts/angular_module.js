@@ -18,7 +18,7 @@ angular.module('Onto', [])
 	var count = 0;
 	for (var i = 0; i < current_ontology.classes.length; i++) {
 		count++;
-		$scope.classes.push({index: count , _id: current_ontology.classes[i]._id ,name: current_ontology.classes[i].name, attributes: [], instances: current_ontology.classes[i].entities })
+		$scope.classes.push({index: count , _id: current_ontology.classes[i]._id ,name: current_ontology.classes[i].name, properties: current_ontology.classes[i].properties, instances: current_ontology.classes[i].entities })
 		
 		for (var j = 0; j < current_ontology.classes[i].entities.length; j++) {
 			$scope.global_instances.push(current_ontology.classes[i].entities[j]);
@@ -34,7 +34,7 @@ angular.module('Onto', [])
 				classes: {index: count , name: 'Clase'+count, attributes: [], instances:[] }
 			}
 			}).then(function successCallback(response) {
-				$scope.classes.push({index: count , _id: response.data._id ,name: 'Clase'+count, attributes: [], instances:[] })
+				$scope.classes.push({index: count , _id: response.data._id ,name: 'Clase'+count, properties: [], instances:[] })
 				M.updateTextFields();
 
 			}, function errorCallback(response) {
@@ -47,16 +47,21 @@ angular.module('Onto', [])
 		for (var i = 0; i < $scope.classes.length; i++) {
 			if (parseInt(index) == $scope.classes[i].index){
 				var random_str = makeid();
+
 				$http({
 					method: 'POST',
 					url: '/ontology/instance/create/'+$scope.classes[i]._id,
 					data: {
-						name: 'NuevaInstancia-'+random_str
+						name: random_str
 					}
 					}).then(function successCallback(response) {
 						//console.log(response);
-						$scope.classes[i].instances.push({ name: 'NuevaInstancia-'+random_str, _id: response.data._id });
-						$scope.global_instances.push({ name: 'NuevaInstancia-'+random_str, _id: response.data._id });
+						var temp_instance = { _id: response.data._id, name:'Nueva-Instancia-'+random_str ,properties: [] };
+						for (var k = 0; k < $scope.classes[i].properties.length; k++) {
+							temp_instance.properties.push({property: $scope.classes[i].properties[k], val:random_str+'('+(k+1)+')' }) 
+						}
+						$scope.classes[i].instances.push(temp_instance);
+						$scope.global_instances.push(temp_instance);
 						M.updateTextFields();
 
 					}, function errorCallback(response) {
@@ -93,14 +98,15 @@ angular.module('Onto', [])
 					method: 'PUT',
 					url: '/ontology/class/'+$scope.classes[i]._id,
 					data: {
-						name: $scope.classes[i].name
-					}
-					}).then(function successCallback(response) {
-						//console.log(response);
+						name: $scope.classes[i].name,
 
-					}, function errorCallback(response) {
-						M.toast({html: 'Error al Guardar'})
-					})
+					}
+				}).then(function successCallback(response) {
+					//console.log(response);
+
+				}, function errorCallback(response) {
+					M.toast({html: 'Error al Guardar'})
+				})
 				break;
 			}
 		}
@@ -115,7 +121,8 @@ angular.module('Onto', [])
 							method: 'PUT',
 							url: '/ontology/instance/'+$scope.classes[i].instances[j]._id,
 							data: {
-								name: $scope.classes[i].instances[j].name
+								name: $scope.classes[i].instances[j].name,
+								properties: $scope.classes[i].instances[j].properties
 							}
 							}).then(function successCallback(response) {
 								//console.log(response);
@@ -127,11 +134,70 @@ angular.module('Onto', [])
 						var inst_id = $scope.classes[i].instances[j]._id;
 						for (var k = 0; k < $scope.global_instances.length; k++) {
 							if ($scope.global_instances[k]._id == inst_id){
-								$scope.global_instances[k].name = $scope.classes[i].instances[j].name ;
+								$scope.global_instances[k] = $scope.classes[i].instances[j] ;
 								break;
 							}
 						}
 
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	$scope.push_prop = function(index){
+		for (var i = 0; i < $scope.classes.length; i++) {
+			if (parseInt(index) == $scope.classes[i].index){
+				var random_str = makeid();
+				$http({
+					method: 'POST',
+					url: '/ontology/property/create/'+$scope.classes[i]._id,
+					data: {
+						name: 'NuevaProp-'+random_str
+					}
+					}).then(function successCallback(response) {
+						//console.log(response);
+						$scope.classes[i].properties.push({ name: 'NuevaProp-'+random_str, _id: response.data._id });
+						M.updateTextFields();
+
+					}, function errorCallback(response) {
+						M.toast({html: 'Error al Guardar'})
+					})
+				break;
+			}
+		}
+	}
+	$scope.pop_prop = function(index){
+		for (var i = 0; i < $scope.classes.length; i++) {
+			if (parseInt(index) == $scope.classes[i].index){
+				if ($scope.classes[i].properties.length > 0 ){
+					var prop_id = $scope.classes[i].properties._id;
+					$scope.classes[i].properties.pop();
+
+					break;
+				}
+			}
+		}
+	}
+	$scope.edit_prop = function(index, index_prop){
+		//console.log('blured_class '+index);
+		for (var i = 0; i < $scope.classes.length; i++) {
+			if (parseInt(index) == $scope.classes[i].index){
+				for (var j = 0; j < $scope.classes[i].properties.length; j++) {
+					if (index_prop == $scope.classes[i].properties[j]._id){
+						$http({
+							method: 'PUT',
+							url: '/ontology/property/'+$scope.classes[i].properties[j]._id,
+							data: {
+								name: $scope.classes[i].properties[j].name
+							}
+							}).then(function successCallback(response) {
+								//console.log(response);
+
+							}, function errorCallback(response) {
+								M.toast({html: 'Error al Guardar'})
+							})
 						break;
 					}
 				}

@@ -3,6 +3,7 @@ import Ontology from '../models/ontology_model';
 import Onto_Class from '../models/onto_class_model';
 import Entity_Class from '../models/entity_model';
 import Relation from '../models/relation_model';
+import Class_Property from '../models/class_property_model';
 import nodeRestClient from 'node-rest-client';
 import path from 'path';
 const Client = nodeRestClient.Client;
@@ -48,13 +49,17 @@ router.get('/edit/:_id', (req, res, next) => {
 	if (req.session.active){
 		Relation.find({ontology: req.params._id}).populate('subject').populate('complement').sort('-date').exec(function(err,relations){
 			Ontology.findById( req.params._id).populate({
-					path:'classes',
-					model:'Onto_Class',
+				path:'classes',
+				model:'Onto_Class',
+				populate:{
+					path:'entities properties',
 					populate:{
-						path:'entities',
-						model:'Entity'
-					}
-				}).exec(function(err, ontology){
+						path:'properties.property',
+						
+					}	
+				}
+			}).exec(function(err, ontology){
+				Class_Property.find({}).sort('-date').exec(function(err, properties){
 					res.render('edit_ontology', { 
 						name: req.session.user.name,
 						last_name: req.session.user.last_name,
@@ -62,6 +67,7 @@ router.get('/edit/:_id', (req, res, next) => {
 						ontology: ontology,
 						relations: relations
 					});		
+				})
 			})
 		})
 	}
@@ -128,14 +134,19 @@ router.post('/instance/create/:_class_id', (req, res, next) => {
 	if (req.session.active){
 
 			const createEntity = new Promise((resolve,reject)=>{
-				var new_entity = new Entity_Class({
-					name: req.body.name,
-				    date: new Date(),
-				    class: req.params._class_id,
-				})
-
-				Onto_Class.findById(req.params._class_id, function(err,classes){
+				Onto_Class.findById(req.params._class_id).populate('properties').exec(function(err,classes){
 					Ontology.findById(classes.ontology, function(err,onto){
+						var temp_props = [];
+						for (var j = 0; j < classes.properties.length; j++) {
+							temp_props.push({property: classes.properties[j]._id, val: req.body.name+'('+(j+1)+')'})
+						}
+
+						var new_entity = new Entity_Class({
+							name: 'Nueva-Instancia-'+req.body.name,
+						    date: new Date(),
+						    class: req.params._class_id,
+						    properties: temp_props
+						})
 						new_entity.save((err,saved)=>{
 							classes.entities.push(saved._id);
 							classes.date = new Date();
@@ -162,12 +173,13 @@ router.post('/instance/create/:_class_id', (req, res, next) => {
 				})
 			})
 			const createAPIEntity = new Promise((resolve,reject)=>{				
-				Onto_Class.findById(req.params._class_id, function(err,classes){
-					OwlAPI.post("http://localhost:8080/API-0.0.1-SNAPSHOT/pdf/onthology/create/instance/"+classes.ontology+"/"+classes.name+"/"+req.body.name, {} , function (data, response) {
-						if (data){
-							resolve(data);
-						}
-					})
+				Onto_Class.findById(req.params._class_id).populate('properties').exec(function(err,classes){
+					for (var j = 0; j < classes.properties.length; j++) {
+						OwlAPI.post("http://localhost:8080/API-0.0.1-SNAPSHOT/pdf/onthology/create/instance/"+classes.ontology+"/"+classes.name+"/"+'Nueva-Instancia-'+req.body.name+'/'+classes.properties[j].name+'/'+req.body.name+'('+(j+1)+')', {} , function (data, response) {
+							
+						})
+					}
+					resolve(200);
 				})
 			})
 			createAPIEntity.then((saved)=>{
@@ -181,6 +193,59 @@ router.post('/instance/create/:_class_id', (req, res, next) => {
 				console.log(err);
 				res.status(500).send({err:err});
 			})
+		
+	}
+	else{
+		res.sendStatus(401);
+	}
+});
+
+router.post('/property/create/:_class_id', (req, res, next) => {
+	if (req.session.active){
+
+			const createProperty = new Promise((resolve,reject)=>{
+				var new_prop = new Class_Property({
+					name: req.body.name,
+				    date: new Date(),
+				    class: req.params._class_id,
+				})
+
+				Onto_Class.findById(req.params._class_id, function(err,classes){
+					Ontology.findById(classes.ontology, function(err,onto){
+						new_prop.save((err,saved)=>{
+							classes.properties.push(saved._id);
+							classes.date = new Date();
+							onto.date = new Date();
+							classes.save(function(err2,saved_2){
+								onto.save(function(err3,saved_3){
+									if(err){
+										console.log(err);
+										reject(err);
+									}
+									if(err2){
+										console.log(err2);
+										reject(err);
+									}
+									if(err3){
+										console.log(err3);
+										reject(err);
+									}
+									resolve(saved);
+								})
+							})
+						})
+					})
+				})
+			})
+			
+			
+			createProperty.then((prop_saved)=>{
+				res.status(200).send({_id:prop_saved._id});
+			}).catch((err)=>{
+				console.log(err);
+				res.status(500).send({err:err});
+			})	
+			
 		
 	}
 	else{
@@ -258,6 +323,16 @@ router.put('/instance/:_instance_id', (req, res, next) => {
 						  var re = new RegExp(instance.name,"g");
 						  //console.log(re + ' '+req.body.name);
 						  var result = data.replace(re , req.body.name);
+						  for (var i = 0; i < instance.properties.length; i++) {
+						  	for (var j = 0; j < req.body.properties.length; j++) {
+						  		if (instance.properties[i].property.toString() ===  req.body.properties[j].property._id.toString() ){
+						  			re = new RegExp(instance.properties[i].val, "g");
+									result = result.replace(re , req.body.properties[j].val);
+									instance.properties[i].val = req.body.properties[j].val;
+									break;
+						  		}
+						  	}
+						  }
 
 						  fs.writeFile('./public/ontologies/'+instance.class.ontology+'.owl', result, 'utf8', function (err) {
 						    	if (err) return console.log(err);
@@ -284,6 +359,45 @@ router.put('/instance/:_instance_id', (req, res, next) => {
 			})
 			
 			editEntity.then((saved)=>{				
+				res.status(200).send({_id:saved._id});									
+			}).catch((err)=>{
+				console.log(err);
+				res.status(500).send({err:err});
+			})
+		
+	}
+	else{
+		res.sendStatus(401);
+	}
+});
+
+router.put('/property/:_property_id', (req, res, next) => {
+	if (req.session.active){
+
+			const editProperty = new Promise((resolve,reject)=>{
+				Class_Property.findById(req.params._property_id).populate('class').exec(function(err,property){
+					Ontology.findById(property.class.ontology, function(err,onto){
+						    	
+						property.name = req.body.name;
+						onto.date = new Date();
+						property.save(function(err2,saved_2){
+							onto.save(function(err3,saved_3){								
+								if(err2){
+									console.log(err2);
+									reject(err);
+								}
+								if(err3){
+									console.log(err3);
+									reject(err);
+								}
+								resolve(saved_2);
+							})
+						})
+					})
+				})
+			})
+			
+			editProperty.then((saved)=>{				
 				res.status(200).send({_id:saved._id});									
 			}).catch((err)=>{
 				console.log(err);
